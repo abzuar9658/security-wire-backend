@@ -1,0 +1,13 @@
+        createProgram
+        {
+        "title": "req.body.title",
+        "intro": "req.body.intro",
+        "photo": "req.body.photo",
+        "inScope": ["asd1","asd1"],
+        "outScope": ["asd","asd"],
+        "vrt": [1,2,3,4],
+        "active": true,
+        "ispublic": true
+       },
+
+       

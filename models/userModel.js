@@ -45,6 +45,22 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
     select: false
+  },
+  points:{
+    type: Number,
+    default: 0
+  },
+  scanning: {
+    type: Boolean,
+    default: false
+  },
+  isPremium:{
+    type: Boolean,
+    default: false
+  },
+  isSuperAdmin:{
+    type: Boolean,
+    default: false
   }
 });
 
