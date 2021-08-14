@@ -1,68 +1,84 @@
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please tell us your name!']
-  },
-  email: {
-    type: String,
-    required: [true, 'Please provide your email'],
-    unique: true,
-    lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email']
-  },
-  photo: String,
-  role: {
-    type: String,
-    enum: ['admin', 'customer', 'security-reseacher'],
-    default: 'customer'
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password'],
-    minlength: 8,
-    select: false
-  },
-  passwordConfirm: {
-    type: String,
-    required: [true, 'Please confirm your password'],
-    validate: {
-      // This only works on CREATE and SAVE!!!
-      validator: function(el) {
-        return el === this.password;
-      },
-      message: 'Passwords are not the same!'
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Please tell us your name!']
+    },
+    email: {
+      type: String,
+      required: [true, 'Please provide your email'],
+      unique: true,
+      lowercase: true,
+      validate: [validator.isEmail, 'Please provide a valid email']
+    },
+    photo: String,
+    password: {
+      type: String,
+      required: [true, 'Please provide a password'],
+      minlength: 8,
+      select: false
+    },
+    passwordConfirm: {
+      type: String,
+      required: [true, 'Please confirm your password'],
+      validate: {
+        // This only works on CREATE and SAVE!!!
+        validator: function(el) {
+          return el === this.password;
+        },
+        message: 'Passwords are not the same!'
+      }
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    role: {
+      type: String,
+      enum: ['admin', 'customer', 'security-researcher'],
+      default: 'customer'
+    },
+    active: {
+      type: Boolean,
+      default: true,
+      select: false
+    },
+
+    // Only for customer
+    createdPrograms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Program' }],
+    scanning: {
+      type: Boolean,
+      default: false
+    },
+    isPremium: {
+      type: Boolean,
+      default: false
+    },
+
+    //Only for security researcher
+    programInvitations: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Program' }
+    ],
+    programsEnrolled: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Program' }
+    ],
+    points: {
+      type: Number,
+      default: 0
+    },
+
+    //Only for admins
+    isSuperAdmin: {
+      type: Boolean,
+      default: false
     }
   },
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
-  active: {
-    type: Boolean,
-    default: true,
-    select: false
-  },
-  points:{
-    type: Number,
-    default: 0
-  },
-  scanning: {
-    type: Boolean,
-    default: false
-  },
-  isPremium:{
-    type: Boolean,
-    default: false
-  },
-  isSuperAdmin:{
-    type: Boolean,
-    default: false
-  }
-});
+  { collection: 'users', discriminatorKey: '_type' }
+);
 
 userSchema.pre('save', async function(next) {
   // Only run this function if password was actually modified

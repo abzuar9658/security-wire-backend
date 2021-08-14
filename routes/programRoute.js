@@ -5,27 +5,38 @@ const programController = require('./../controllers/programController');
 
 const router = express.Router();
 
-router.post('/create',authController.protect,authController.restrictTo('customer'), programController.createProgram);
+router.post(
+  '/create',
+  authController.protect,
+  authController.restrictTo('customer'),
+  programController.createProgram
+);
 router.get('/getpublic', programController.getPublicPrograms);
-router.get('/',authController.protect, programController.getmyPrograms);
-router.get('/getAll',authController.protect,authController.restrictTo('admin'), programController.getAllPrograms);
-
-router.delete('/:id',authController.protect, programController.deleteMe)
-router.patch('/:id',authController.protect, programController.updateMe);
-
-
-router.patch('/updateMe', authController.protect, userController.updateMe);
-router.delete('/deleteMe', authController.protect, programController.deleteMe);
-
-router
-  .route('/')
-  .get(userController.getAllUsers)
-  .post(userController.createUser);
-
-router
-  .route('/:id')
-  .get(userController.getUser)
-  .patch(userController.updateUser)
-  .delete(userController.deleteUser);
+router.get('/', authController.protect, programController.getmyPrograms);
+router.get(
+  '/getAll',
+  authController.protect,
+  authController.restrictTo('admin'),
+  programController.getAllPrograms
+);
+router.get(
+  '/:programId/approve',
+  authController.protect,
+  authController.restrictTo('admin'),
+  programController.approveProgram
+);
+router.patch(
+  '/:programId/invites',
+  authController.protect,
+  programController.sendInvitations
+);
+router.get(
+  '/:programId/enroll',
+  authController.protect,
+  authController.restrictTo('security-researcher'),
+  programController.getEnrolled
+);
+router.delete('/:id', authController.protect, programController.deleteMe);
+router.patch('/:id', authController.protect, programController.updateMe);
 
 module.exports = router;

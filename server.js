@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 
 process.on('uncaughtException', err => {
   console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.log(err);
   console.log(err.name, err.message);
   process.exit(1);
 });
@@ -14,13 +15,14 @@ const app = require('./app');
 //   '<PASSWORD>',
 //   process.env.DATABASE_PASSWORD
 // );
-const DB = process.env.DATABASE
+const DB = process.env.DATABASE;
 
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
     useCreateIndex: true,
-    useFindAndModify: false
+    useFindAndModify: false,
+    useUnifiedTopology: true
   })
   .then(() => console.log('DB connection successful!'));
 
