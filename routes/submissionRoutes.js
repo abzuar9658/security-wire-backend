@@ -21,5 +21,31 @@ router.post(
   submissionController.uploadPOC,
   submissionController.postNewSubmission
 );
+router.patch(
+  '/:submissionId',
+  authController.protect,
+  authController.restrictTo('security-researcher'),
+  submissionController.uploadPOC,
+  submissionController.updateSubmission
+);
+router.delete(
+  '/:submissionId',
+  authController.protect,
+  authController.restrictTo('security-researcher'),
+  submissionController.deleteSubmission
+);
+router.patch(
+  '/:submissionId/approve',
+  authController.protect,
+  authController.restrictTo('admin'),
+  submissionController.approveSubmission
+);
+
+router.get(
+  '/payment/:submissionId',
+  authController.protect,
+  authController.restrictTo('customer'),
+  submissionController.getCheckoutSession
+);
 
 module.exports = router;

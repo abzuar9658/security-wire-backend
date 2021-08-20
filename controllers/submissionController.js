@@ -2,8 +2,8 @@ const Submissions = require('./../models/submissionModel');
 const Program = require('./../models/programModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
-const User = require('./../models/userModel');
 const multer = require('multer');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -76,5 +76,94 @@ exports.postNewSubmission = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: 'success',
     data: submission
+  });
+});
+
+exports.updateSubmission = catchAsync(async (req, res, next) => {
+  let submission = await Submissions.findById(req.params.submissionId);
+  if (!submission)
+    return next(new AppError('No Submission Found with this id', 400));
+  if (req.user.id.toString() !== submission.researcherId.toString()) {
+    return next(
+      new AppError('You do not have permission to update this submission', 400)
+    );
+  }
+  if (req.body.endPointUrl) submission.endPointUrl = req.body.endPointUrl;
+  if (req.file) submission.poc = req.file.name;
+  submission = await submission.save();
+
+  res.status(201).json({
+    status: 'success',
+    data: submission
+  });
+});
+
+exports.approveSubmission = catchAsync(async (req, res, next) => {
+  const submission = await Submissions.findOneAndUpdate(
+    { _id: req.params.submissionId },
+    { isApproved: true }
+  );
+  if (!submission)
+    return next(new AppError('No Submission Found with this id', 400));
+  res.status(201).json({
+    status: 'success',
+    data: submission
+  });
+});
+
+exports.deleteSubmission = catchAsync(async (req, res, next) => {
+  let submission = await Submissions.findById(req.params.submissionId);
+  if (!submission)
+    return next(new AppError('No Submission Found with this id', 400));
+
+  if (submission.researcherId.toString() !== req.user.id.toString())
+    return next(
+      new AppError('Researcher who created the program can delete only', 400)
+    );
+
+  submission = await Submissions.findByIdAndDelete(req.params.submissionId);
+
+  res.status(204).json({
+    status: 'deleted',
+    data: null
+  });
+});
+
+exports.getCheckoutSession = catchAsync(async (req, res, next) => {
+  const submission = await Submissions.findById(req.params.submissionId);
+  if (!submission)
+    return next(new AppError('No Submission found with this id', 400));
+
+  if (!submission.isApproved)
+    return next(
+      new AppError(
+        `Submission ${req.params.submissionId} is not approved yet!`,
+        400
+      )
+    );
+  // 2) Create checkout session
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    success_url: `${req.protocol}://${req.get('host')}`,
+    cancel_url: `${req.protocol}://${req.get('host')}`,
+    customer_email: req.user.email,
+    client_reference_id: submission.researcherId.toString(),
+    line_items: [
+      {
+        name: `${submission._id.toString()} Submission`,
+        description: `Submission for ${
+          req.user.id
+        } to submission ${submission._id.toString()} `,
+        amount: req.body.price,
+        currency: 'usd',
+        quantity: 1
+      }
+    ]
+  });
+
+  // 3) Create session as response
+  res.status(200).json({
+    status: 'success',
+    session
   });
 });
