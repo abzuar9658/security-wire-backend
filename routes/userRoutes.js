@@ -8,6 +8,12 @@ router.post('/signup', authController.signup);
 router.get('/signup/newAdmin', authController.firstAdmin);
 router.post('/login', authController.login);
 
+router.get(
+  '/securityResearchers',
+  authController.protect,
+  userController.getSecurityResearchers
+);
+
 router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
 

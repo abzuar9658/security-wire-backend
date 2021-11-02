@@ -12,26 +12,33 @@ const filterObj = (obj, ...allowedFields) => {
 };
 
 exports.createProgram = catchAsync(async (req, res, next) => {
-  const newProgram = await Program.create({
+  const programBody = {
     title: req.body.title,
     customer: req.user._id.toString(),
     intro: req.body.intro,
     photo: req.body.photo,
     inScope: req.body.inScope,
     outScope: req.body.outScope,
-    vrt: {
+    invited: req.body.invited,
+    detail: req.body.detail,
+    active: req.body.active,
+    ispublic: req.body.ispublic
+  };
+  if (req.body.vrt) {
+    programBody.vrt = {
       vrt1: req.body.vrt[0],
       vrt2: req.body.vrt[1],
       vrt3: req.body.vrt[2],
       vrt4: req.body.vrt[3]
-    },
-    invited: req.body.invited,
-    photo: req.body.photo,
-    detail: req.body.detail,
-    active: req.body.active,
-    ispublic: req.body.ispublic
+    };
+  }
+  const program = await Program.create(programBody);
+  res.status(200).json({
+    status: 'success',
+    data: {
+      program
+    }
   });
-  res.status(200).send(newProgram);
 });
 
 exports.getPublicPrograms = catchAsync(async (req, res, next) => {
@@ -72,6 +79,7 @@ exports.getAllPrograms = catchAsync(async (req, res, next) => {
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   // 1) Create error if user POSTs password data
+  console.log('PROGRAM UPDATE REQUEST:', req.body);
   if (req.body.password || req.body.passwordConfirm) {
     return next(
       new AppError(
@@ -116,7 +124,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       data: {
-        Program: updatedProgram
+        program: updatedProgram
       }
     });
   } else {
@@ -136,7 +144,7 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
     });
   }
   if (req.user._id.toString() == program.customer || req.user.role == 'admin') {
-    await Program.findByIdAndUpdate(program._id, { active: false });
+    await Program.findByIdAndDelete(program._id, { active: false });
 
     res.status(204).json({
       status: 'success',
@@ -190,12 +198,12 @@ exports.sendInvitations = catchAsync(async (req, res, next) => {
 
   invitedUsers = invitedUsers.filter(el => el != undefined);
 
-  program.invited = [[...invitedUsers, ...program.invited]];
+  program.invited = [...invitedUsers, ...program.invited];
   program.invited = program.invited.reduce(function(a, b) {
     if (a.indexOf(b) < 0) a.push(b);
     return a;
   }, []);
-
+  // console.log('INVITED USERS, INVITED PROGRAMS', invitedUsers, program.invited);
   for (i = 0; i < users.length; i++) {
     if (
       users[i].role === 'security-researcher' &&
@@ -210,6 +218,7 @@ exports.sendInvitations = catchAsync(async (req, res, next) => {
     }
   }
   program = await program.save();
+  console.log(program);
   return res.status(201).json({
     status: 'success',
     message:
