@@ -6,15 +6,18 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 
+const cors = require('cors');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const userRouter = require('./routes/userRoutes');
+const scannerRouter = require('./routes/scannerRoutes');
 const programRouter = require('./routes/programRoute');
 const submissionRouter = require('./routes/submissionRoutes');
 const app = express();
 
 // 1) GLOBAL MIDDLEWARES
 // Set security HTTP headers
+app.use(cors());
 app.use(helmet());
 
 // Development logging
@@ -60,6 +63,7 @@ app.use((req, res, next) => {
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/programs', programRouter);
 app.use('/api/v1/submissions', submissionRouter);
+app.use('/api/v1/Scanner', scannerRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
