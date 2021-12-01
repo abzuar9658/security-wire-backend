@@ -10,10 +10,21 @@ router.get(
   submissionController.getAllSubmissions
 );
 router.get(
+  '/researcher',
+  authController.protect,
+  submissionController.getSubmissionsByResearcher
+);
+router.post(
+  '/download',
+  authController.protect,
+  submissionController.downloadSubmission
+);
+router.get(
   '/:programId',
   authController.protect,
   submissionController.getSubmissionsByProgram
 );
+
 router.post(
   '/:programId',
   authController.protect,

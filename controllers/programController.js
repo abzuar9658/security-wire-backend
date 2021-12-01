@@ -1,7 +1,9 @@
 const Program = require('./../models/programModel');
 const User = require('./../models/userModel');
+const Submission = require('./../models/submissionModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
+const { forEach } = require('p-iteration');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -22,16 +24,17 @@ exports.createProgram = catchAsync(async (req, res, next) => {
     invited: req.body.invited,
     detail: req.body.detail,
     active: req.body.active,
-    ispublic: req.body.ispublic
+    ispublic: req.body.ispublic,
+    vrt: req.body.vrt
   };
-  if (req.body.vrt) {
-    programBody.vrt = {
-      vrt1: req.body.vrt[0],
-      vrt2: req.body.vrt[1],
-      vrt3: req.body.vrt[2],
-      vrt4: req.body.vrt[3]
-    };
-  }
+  // if (req.body.vrt) {
+  //   programBody.vrt = {
+  //     vrt1: req.body.vrt[0],
+  //     vrt2: req.body.vrt[1],
+  //     vrt3: req.body.vrt[2],
+  //     vrt4: req.body.vrt[3]
+  //   };
+  // }
   const program = await Program.create(programBody);
   res.status(200).json({
     status: 'success',
@@ -42,7 +45,11 @@ exports.createProgram = catchAsync(async (req, res, next) => {
 });
 
 exports.getPublicPrograms = catchAsync(async (req, res, next) => {
-  const programs = await Program.find({ ispublic: true, active: true });
+  const programs = await Program.find({
+    ispublic: true,
+    isApproved: true,
+    active: true
+  }).populate('customer', 'name');
   // SEND RESPONSE
   res.status(200).json({
     status: 'success',
@@ -66,7 +73,10 @@ exports.getmyPrograms = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPrograms = catchAsync(async (req, res, next) => {
-  const programs = await Program.find().sort('date');
+  const programs = await Program.find({
+    ispublic: true,
+    isApproved: true
+  }).sort('date');
   // SEND RESPONSE
   res.status(200).json({
     status: 'success',
@@ -136,7 +146,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteMe = catchAsync(async (req, res, next) => {
-  const program = await Program.findById(req.params.id);
+  let program = await Program.findById(req.params.id);
   if (!program) {
     res.status(404).json({
       status: 'Program Not Found',
@@ -144,7 +154,18 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
     });
   }
   if (req.user._id.toString() == program.customer || req.user.role == 'admin') {
-    await Program.findByIdAndDelete(program._id, { active: false });
+    program = await Program.findByIdAndDelete(program._id, {
+      active: false
+    });
+    const invitedResearchers = program.invited;
+    await forEach(invitedResearchers, async researcher => {
+      let user = await User.findById(researcher);
+      user.programInvitations = user.programInvitations.filter(
+        invProgram => invProgram.toString() !== program._id.toString()
+      );
+      user = await user.save({ validateBeforeSave: false });
+      //console.log('USERSSSSSQWERTY', user);
+    });
 
     res.status(204).json({
       status: 'success',
@@ -198,11 +219,12 @@ exports.sendInvitations = catchAsync(async (req, res, next) => {
 
   invitedUsers = invitedUsers.filter(el => el != undefined);
 
-  program.invited = [...invitedUsers, ...program.invited];
-  program.invited = program.invited.reduce(function(a, b) {
-    if (a.indexOf(b) < 0) a.push(b);
-    return a;
-  }, []);
+  program.invited = [...invitedUsers];
+  // program.invited = program.invited.reduce(function(a, b) {
+  //   if (a.indexOf(b) < 0) a.push(b);
+  //   return a;
+  // }, []);
+  program.invited = [...new Set(program.invited)];
   // console.log('INVITED USERS, INVITED PROGRAMS', invitedUsers, program.invited);
   for (i = 0; i < users.length; i++) {
     if (
@@ -233,7 +255,7 @@ exports.getEnrolled = catchAsync(async (req, res, next) => {
     return next(new AppError('Please enter a valid program id', 400));
 
   if (program.enrolled.includes(req.user._id))
-    return next(new AppError('You are already enrolled in this program', 404));
+    return next(new AppError('You are already enrolled in this program', 403));
   if (!program.ispublic && !program.invited.includes(req.user._id))
     return next(
       new AppError('You donot have permission to enroll in this program', 403)
@@ -257,4 +279,66 @@ exports.getEnrolled = catchAsync(async (req, res, next) => {
     stauts: 'success',
     message: 'You are successfully enrolled in this program'
   });
+});
+
+exports.getInvitedPrograms = catchAsync(async (req, res, next) => {
+  let programs = req.user.programInvitations;
+  programs = await Program.find({ _id: programs }).populate('customer', 'name');
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      programs
+    }
+  });
+});
+
+exports.getEnrolledPrograms = catchAsync(async (req, res, next) => {
+  let programs = req.user.programsEnrolled;
+  programs = await Program.find({ _id: programs })
+    .populate('customer', 'name')
+    .populate('enrolled', 'programsSubmitted');
+
+  // programs.forEach(program => {
+  //   program.enrolled = [].concat.apply([], program.enrolled);
+  // });
+  // console.log('PROGRAM **!**', programs);
+  // programs = programs.filter(program =>
+  //   program.enrolled.some(pg => pg)
+  // );
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      programs
+    }
+  });
+});
+
+exports.getUnenrolled = catchAsync(async (req, res, next) => {
+  const programId = req.params.programId;
+  const userId = req.user.id;
+  let program = await Program.findById(programId);
+  let user = await User.findById(userId);
+  if (!program || !user) return next(new AppError('Invalid information!', 403));
+  console.log('INFO***', program, user);
+  program.enrolled = program.enrolled.filter(
+    user => user.toString() !== userId.toString()
+  );
+  program = await program.save();
+  user.programsEnrolled = user.programsEnrolled.filter(
+    program => program.toString() !== programId.toString()
+  );
+  const submission = await Submission.findOneAndDelete({
+    programId,
+    researcherId: user._id
+  });
+
+  if (submission) {
+    user.programsSubmitted = user.programsSubmitted.filter(program => {
+      return program.toString() !== submission._id.toString();
+    });
+  }
+  user = await user.save({ validateBeforeSave: false });
+
+  console.log('DATA AFTER CHANGING', program, user);
+  return res.status(201).json({ success: true });
 });

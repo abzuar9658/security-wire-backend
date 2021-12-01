@@ -1,10 +1,12 @@
 const Submissions = require('./../models/submissionModel');
 const Program = require('./../models/programModel');
+const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const multer = require('multer');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const path = require('path');
 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, `${process.cwd()}/public/submissions`);
@@ -15,6 +17,7 @@ const multerStorage = multer.diskStorage({
   }
 });
 const multerFilter = (req, file, cb) => {
+  console.log('MY FILE', file);
   if (file.mimetype.endsWith('pdf')) cb(null, true);
   else cb(new AppError('Not a PDF file, please upload pdf only.', 400), false);
 };
@@ -24,6 +27,15 @@ const upload = multer({
 });
 
 exports.uploadPOC = upload.single('file');
+
+exports.downloadSubmission = catchAsync(async (req, res, next) => {
+  const fileName = req.body.fileName;
+  const file = path.join(process.cwd(), 'public', 'submissions', fileName);
+  console.log('FILE PATH', file);
+
+  if (file) return res.download(file);
+  next(new AppError('No files found!', 304));
+});
 
 exports.getAllSubmissions = catchAsync(async (req, res, next) => {
   const submissions = await Submissions.find();
@@ -54,11 +66,22 @@ exports.getSubmissionsByProgram = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getSubmissionsByResearcher = catchAsync(async (req, res, next) => {
+  const submissions = await Submissions.find({
+    researcherId: req.user.id
+  }).populate('programId', 'title');
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      programs: submissions
+    }
+  });
+});
+
 exports.postNewSubmission = catchAsync(async (req, res, next) => {
   let isUser = req.user.programsEnrolled.some(
     program => program.toString() === req.params.programId.toString()
   );
-
   if (!isUser)
     return next(
       new AppError(
@@ -72,7 +95,22 @@ exports.postNewSubmission = catchAsync(async (req, res, next) => {
     endPointUrl: req.body.endPointUrl
   };
   if (req.file) body.poc = req.file.filename;
+  const isAlreadyUploaded = await Submissions.find({
+    programId: body.programId,
+    researcherId: body.researcherId
+  }).exec();
+  console.log(isAlreadyUploaded);
+  if (isAlreadyUploaded && isAlreadyUploaded.length > 0)
+    return next(
+      new AppError(
+        'You already have submitted your findings for this program!',
+        403
+      )
+    );
+  const user = await User.findById(req.user.id);
   const submission = await Submissions.create(body);
+  user.programsSubmitted = [...user.programsSubmitted, submission._id];
+  await user.save({ validateBeforeSave: false });
   res.status(201).json({
     status: 'success',
     data: submission
@@ -114,11 +152,11 @@ exports.approveSubmission = catchAsync(async (req, res, next) => {
 exports.deleteSubmission = catchAsync(async (req, res, next) => {
   let submission = await Submissions.findById(req.params.submissionId);
   if (!submission)
-    return next(new AppError('No Submission Found with this id', 400));
+    return next(new AppError('No Submission Found with this id', 403));
 
   if (submission.researcherId.toString() !== req.user.id.toString())
     return next(
-      new AppError('Researcher who created the program can delete only', 400)
+      new AppError('Researcher who created the submission can delete only', 403)
     );
 
   submission = await Submissions.findByIdAndDelete(req.params.submissionId);

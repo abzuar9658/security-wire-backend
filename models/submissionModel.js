@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const User = require('./userModel');
 const submissionSchema = new mongoose.Schema({
   programId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -12,8 +12,8 @@ const submissionSchema = new mongoose.Schema({
     required: [true, 'Please provide researcher ID']
   },
   endPointUrl: {
-    type: String,
-    required: [true, 'Please provide the URL where bug was found']
+    type: String
+    // required: [true, 'Please provide the URL where bug was found']
   },
   poc: {
     type: String,

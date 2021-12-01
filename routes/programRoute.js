@@ -36,6 +36,12 @@ router.get(
   authController.restrictTo('security-researcher'),
   programController.getEnrolled
 );
+router.get(
+  '/:programId/unenroll',
+  authController.protect,
+  authController.restrictTo('security-researcher'),
+  programController.getUnenrolled
+);
 router.delete('/:id', authController.protect, programController.deleteMe);
 router.patch('/:id', authController.protect, programController.updateMe);
 

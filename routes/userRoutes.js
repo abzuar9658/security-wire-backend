@@ -1,13 +1,24 @@
 const express = require('express');
 const userController = require('./../controllers/userController');
 const authController = require('./../controllers/authController');
-
+const programController = require('./../controllers/programController');
 const router = express.Router();
 
 router.post('/signup', authController.signup);
 router.get('/signup/newAdmin', authController.firstAdmin);
 router.post('/login', authController.login);
-
+router.get(
+  '/getInvitedPrograms',
+  authController.protect,
+  authController.restrictTo('security-researcher'),
+  programController.getInvitedPrograms
+);
+router.get(
+  '/getEnrolledPrograms',
+  authController.protect,
+  authController.restrictTo('security-researcher'),
+  programController.getEnrolledPrograms
+);
 router.get(
   '/securityResearchers',
   authController.protect,
