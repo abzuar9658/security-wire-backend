@@ -47,7 +47,7 @@ exports.createScan = catchAsync(async (req, res, next) => {
 
 
 exports.getmyScans = catchAsync(async (req, res, next) => {
-  const Scans = await Scan.find({ customer: req.user._id.toString() });
+  const Scans = await Scan.find({ customer: req.user._id.toString(), deleted: false  });
   // SEND RESPONSE
   res.status(200).json({
     status: 'success',
@@ -81,7 +81,6 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
   }
   if (req.user._id.toString() == scan.customer || req.user.role == 'admin') {
     await Scan.findByIdAndUpdate(scan._id, { deleted: true });
-
     res.status(204).json({
       status: 'success',
       data: null

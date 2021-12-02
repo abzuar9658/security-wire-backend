@@ -1,12 +1,14 @@
 import requests
 from pprint import pprint
 from bs4 import BeautifulSoup as bs
-from urllib.parse import urljoin
+from urllib.parse import urljoin, parse_qs
+import urllib.parse as urlparse
 import sys
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import agents
 import random
+import urllib.parse as urlparse
 
 
 retry_strategy = Retry(
@@ -29,9 +31,10 @@ def get_all_forms(url):
     """Given a `url`, it returns all forms from the HTML content"""
     try:
         soup = bs(requests.get(url, allow_redirects=False).content, "html.parser")
+        return soup.find_all("form")
     except:
         pass
-    return soup.find_all("form")
+        return ""
 
 
 def get_form_details(form):
@@ -93,7 +96,13 @@ def scan_xss(url):
     """
     final_url = ""
     for js_script in xss_vector:
-        new_url = url+js_script
+        temp1 = ''
+        temp2 = ''
+        query_string = urlparse.urlparse(url)
+        temp1 = query_string.netloc+query_string.path+'?'
+        for param in parse_qs(query_string.query):
+            temp2 = temp2 + param + '='+js_script+'&'
+        new_url = (temp1+temp2)[:-1]
         try:
             res = s.get(new_url, allow_redirects=False)
             if js_script.lower() in res.content.decode().lower():
