@@ -7,10 +7,10 @@ const router = express.Router();
 router.post(
   '/create',
   authController.protect,
-  authController.restrictTo('customer'),
   scannerController.createScan
 );
 router.get('/', authController.protect, scannerController.getmyScans);
+router.get('/status', authController.protect, scannerController.status);
 router.get(
   '/getAll',
   authController.protect,

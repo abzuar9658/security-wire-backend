@@ -166,4 +166,4 @@ def worker(urls):
 if __name__ == "__main__":
     import sys
     url = sys.argv[1]
-    print(scan_xss(url))
+    # print(scan_xss(url))

@@ -8,17 +8,7 @@ const scannerSchema = new mongoose.Schema({
   },
   date: { type: Date, default: Date.now },
   data: {
-    type: String,
-    get: function(data) {
-      try { 
-        return JSON.parse(data);
-      } catch(error) { 
-        return data;
-      }
-    },
-    set: function(data) {
-      return JSON.stringify(data);
-    }
+    type: String
   },
   logs: {
     type: [String]

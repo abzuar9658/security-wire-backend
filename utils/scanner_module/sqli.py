@@ -95,7 +95,8 @@ def scan_sql_injection(url):
                 # print("[+] SQL Injection vulnerable, link:", new_url)
                 return url
         except Exception as e:  # work on python 3.x
-            print('Failed to upload to ftp: ' + str(e))
+            pass
+            # print('Failed to upload to ftp: ' + str(e))
     # test on HTML forms
     try:
         forms = get_all_forms(url)
