@@ -29,6 +29,7 @@ const upload = multer({
 exports.uploadPOC = upload.single('file');
 
 exports.downloadSubmission = catchAsync(async (req, res, next) => {
+  console.log('REQ HEADERS', req.headers);
   const fileName = req.body.fileName;
   const file = path.join(process.cwd(), 'public', 'submissions', fileName);
   console.log('FILE PATH', file);
@@ -66,14 +67,26 @@ exports.getSubmissionsByProgram = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getSubmissionsToApprove = catchAsync(async (req, res, next) => {
+  const submissions = await Submissions.find({
+    isApproved: false
+  })
+    .populate('researcherId', 'name')
+    .populate('programId', 'title');
+  return res.status(200).json({
+    status: 'success',
+    data: { submissions }
+  });
+});
+
 exports.getSubmissionsByResearcher = catchAsync(async (req, res, next) => {
   const submissions = await Submissions.find({
     researcherId: req.user.id
-  }).populate('programId', 'title');
+  });
   return res.status(200).json({
     status: 'success',
     data: {
-      programs: submissions
+      submissions
     }
   });
 });

@@ -20,6 +20,12 @@ router.get(
   programController.getAllPrograms
 );
 router.get(
+  '/toApprove',
+  authController.protect,
+  authController.restrictTo('admin'),
+  programController.getProgramsToApprove
+);
+router.get(
   '/:programId/approve',
   authController.protect,
   authController.restrictTo('admin'),

@@ -22,6 +22,22 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getUsers = catchAsync(async (req, res, next) => {
+  const role = req.params.role;
+  const users = await User.find({ role })
+    .populate('programsSubmitted')
+    .populate('programInvitations')
+    .populate('programsEnrolled')
+    .populate('createdPrograms');
+  return res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: {
+      users
+    }
+  });
+});
+
 exports.getSecurityResearchers = catchAsync(async (req, res, next) => {
   const users = await User.find()
     .where('role')

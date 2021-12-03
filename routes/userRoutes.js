@@ -7,6 +7,14 @@ const router = express.Router();
 router.post('/signup', authController.signup);
 router.get('/signup/newAdmin', authController.firstAdmin);
 router.post('/login', authController.login);
+router.get('/verify', authController.verify);
+
+router.get(
+  '/admin/:role',
+  authController.protect,
+  authController.restrictTo('admin'),
+  userController.getUsers
+);
 router.get(
   '/getInvitedPrograms',
   authController.protect,

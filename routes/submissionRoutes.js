@@ -10,6 +10,12 @@ router.get(
   submissionController.getAllSubmissions
 );
 router.get(
+  '/toApprove',
+  authController.protect,
+  authController.restrictTo('admin'),
+  submissionController.getSubmissionsToApprove
+);
+router.get(
   '/researcher',
   authController.protect,
   submissionController.getSubmissionsByResearcher

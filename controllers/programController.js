@@ -36,6 +36,9 @@ exports.createProgram = catchAsync(async (req, res, next) => {
   //   };
   // }
   const program = await Program.create(programBody);
+  const user = await User.findById(req.user._id);
+  user.createdPrograms = [...user.createdPrograms, program._id];
+  await user.save({ validateBeforeSave: false });
   res.status(200).json({
     status: 'success',
     data: {
@@ -82,7 +85,23 @@ exports.getAllPrograms = catchAsync(async (req, res, next) => {
     status: 'success',
     results: programs.length,
     data: {
-      program: programs
+      programs: programs
+    }
+  });
+});
+
+exports.getProgramsToApprove = catchAsync(async (req, res, next) => {
+  const programs = await Program.find({
+    isApproved: false
+  })
+    .sort('date')
+    .populate('customer', 'name');
+  // SEND RESPONSE
+  res.status(200).json({
+    status: 'success',
+    results: programs.length,
+    data: {
+      programs
     }
   });
 });
@@ -153,6 +172,11 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
       data: null
     });
   }
+  const user = await User.findById(req.user._id);
+  user.createdPrograms = user.createdPrograms.filter(
+    pg => pg.toString() !== program._id.toString()
+  );
+  await user.save({ validateBeforeSave: false });
   if (req.user._id.toString() == program.customer || req.user.role == 'admin') {
     program = await Program.findByIdAndDelete(program._id, {
       active: false
@@ -166,7 +190,6 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
       user = await user.save({ validateBeforeSave: false });
       //console.log('USERSSSSSQWERTY', user);
     });
-
     res.status(204).json({
       status: 'success',
       data: null
