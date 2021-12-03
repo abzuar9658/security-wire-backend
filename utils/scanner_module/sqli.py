@@ -4,7 +4,12 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import os
 from bs4 import BeautifulSoup as bs
+<<<<<<< HEAD
 from urllib.parse import urljoin
+=======
+from urllib.parse import urljoin, parse_qs
+import urllib.parse as urlparse
+>>>>>>> cb8a41adbcbeaaa9b11ab9aac3acccdf6355aa2c
 from pprint import pprint
 import agents
 import random
@@ -78,7 +83,17 @@ def scan_sql_injection(url):
     # test on URL
     for c in "'\"":
         # add quote/double quote character to the URL
+<<<<<<< HEAD
         new_url = url+c
+=======
+        temp1 = ''
+        temp2 = ''
+        query_string = urlparse.urlparse(url)
+        temp1 = query_string.netloc+query_string.path+'?'
+        for param in parse_qs(query_string.query):
+            temp2 = temp2 + param + '='+c+'&'
+        new_url = "https://"+(temp1+temp2)[:-1]
+>>>>>>> cb8a41adbcbeaaa9b11ab9aac3acccdf6355aa2c
         # print("[!] Trying", new_url)
         # HTTP request
         try:
@@ -88,7 +103,12 @@ def scan_sql_injection(url):
                 # print("[+] SQL Injection vulnerable, link:", new_url)
                 return url
         except Exception as e:  # work on python 3.x
+<<<<<<< HEAD
             print('Failed to upload to ftp: ' + str(e))
+=======
+            pass
+            # print('Failed to upload to ftp: ' + str(e))
+>>>>>>> cb8a41adbcbeaaa9b11ab9aac3acccdf6355aa2c
     # test on HTML forms
     try:
         forms = get_all_forms(url)

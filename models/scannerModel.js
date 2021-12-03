@@ -8,6 +8,7 @@ const scannerSchema = new mongoose.Schema({
   },
   date: { type: Date, default: Date.now },
   data: {
+<<<<<<< HEAD
     type: String,
     get: function(data) {
       try { 
@@ -19,6 +20,9 @@ const scannerSchema = new mongoose.Schema({
     set: function(data) {
       return JSON.stringify(data);
     }
+=======
+    type: String
+>>>>>>> cb8a41adbcbeaaa9b11ab9aac3acccdf6355aa2c
   },
   logs: {
     type: [String]

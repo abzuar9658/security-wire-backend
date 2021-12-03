@@ -120,50 +120,36 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Incorrect email or password', 401));
   }
 
-  createSendToken(user, 200, res);
-});
+exports.protect = catchAsync(async(req, res, next) => {
+    // 1) Getting token and check of it's there
+    
+    let token;
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer')
+    ) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+    if (!token) {
+        return next(
+            new AppError('You are not logged in! Please log in to get access.', 401)
+        );
+    }
 
-exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check of it's there
-  let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    token = req.headers.authorization.split(' ')[1];
-  }
+    // 2) Verification token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  if (!token) {
-    return next(
-      new AppError('You are not logged in! Please log in to get access.', 401)
-    );
-  }
-
-  // 2) Verification token
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-
-  // 3) Check if user still exists
-  const currentUser = await User.findById(decoded.id);
-  if (!currentUser) {
-    return next(
-      new AppError(
-        'The user belonging to this token does no longer exist.',
-        401
-      )
-    );
-  }
-
-  // 4) Check if user changed password after the token was issued
-  if (currentUser.changedPasswordAfter(decoded.iat)) {
-    return next(
-      new AppError('User recently changed password! Please log in again.', 401)
-    );
-  }
-
-  // GRANT ACCESS TO PROTECTED ROUTE
-  req.user = currentUser;
-  next();
-});
+    // 3) Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+        return next(
+            new AppError(
+                'The user belonging to this token does no longer exist.',
+                401
+            )
+        );
+    }
+    
 
 exports.verify = catchAsync(async (req, res, next) => {
   // 1) Getting token and check of it's there
@@ -257,36 +243,13 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.resetPassword = catchAsync(async (req, res, next) => {
-  // 1) Get user based on the token
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(req.params.token)
-    .digest('hex');
-
-  const user = await User.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() }
-  });
-
-  // 2) If token has not expired, and there is user, set the new password
-  if (!user) {
-    return next(new AppError('Token is invalid or has expired', 400));
-  }
-  user.password = req.body.password;
-  user.passwordConfirm = req.body.passwordConfirm;
-  user.passwordResetToken = undefined;
-  user.passwordResetExpires = undefined;
-  await user.save();
-
-  // 3) Update changedPasswordAt property for the user
-  // 4) Log the user in, send JWT
-  createSendToken(user, 200, res);
-});
-
-exports.updatePassword = catchAsync(async (req, res, next) => {
-  // 1) Get user from collection
-  const user = await User.findById(req.user.id).select('+password');
+exports.updatePassword = catchAsync(async(req, res, next) => {
+    // 1) Get user from collection
+    const user = await User.findById(req.user.id).select('+password');
+    // 2) Check if POSTed current password is correct
+    if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+        return next(new AppError('Your current password is wrong.', 401));
+    }
 
   // 2) Check if POSTed current password is correct
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
