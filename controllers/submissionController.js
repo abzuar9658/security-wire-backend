@@ -82,11 +82,11 @@ exports.getSubmissionsToApprove = catchAsync(async (req, res, next) => {
 exports.getSubmissionsByResearcher = catchAsync(async (req, res, next) => {
   const submissions = await Submissions.find({
     researcherId: req.user.id
-  });
+  }).populate('programId', 'title');
   return res.status(200).json({
     status: 'success',
     data: {
-      submissions
+      programs: submissions
     }
   });
 });

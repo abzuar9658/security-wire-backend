@@ -15,6 +15,19 @@ router.get(
   authController.restrictTo('admin'),
   userController.getUsers
 );
+
+router.get(
+  '/suspend/:userId',
+  authController.protect,
+  authController.restrictTo('admin'),
+  userController.suspendUser
+);
+router.get(
+  '/unsuspend/:userId',
+  authController.protect,
+  authController.restrictTo('admin'),
+  userController.unSuspendUser
+);
 router.get(
   '/getInvitedPrograms',
   authController.protect,

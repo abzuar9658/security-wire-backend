@@ -8,21 +8,17 @@ const scannerSchema = new mongoose.Schema({
   },
   date: { type: Date, default: Date.now },
   data: {
-<<<<<<< HEAD
     type: String,
     get: function(data) {
-      try { 
+      try {
         return JSON.parse(data);
-      } catch(error) { 
+      } catch (error) {
         return data;
       }
     },
     set: function(data) {
       return JSON.stringify(data);
     }
-=======
-    type: String
->>>>>>> cb8a41adbcbeaaa9b11ab9aac3acccdf6355aa2c
   },
   logs: {
     type: [String]
@@ -37,7 +33,6 @@ const scannerSchema = new mongoose.Schema({
     enum: ['active', 'completed', 'error'],
     default: 'active'
   }
-
 });
 
 scannerSchema.pre(/^find/, function(next) {

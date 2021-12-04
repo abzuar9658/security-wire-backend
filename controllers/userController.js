@@ -10,6 +10,26 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
+exports.suspendUser = catchAsync(async (req, res, next) => {
+  const id = req.params.userId;
+  await User.findByIdAndUpdate(id, { isSuspended: true });
+  res.status(200).json({
+    success: true,
+    data: {
+      message: 'user suspended!'
+    }
+  });
+});
+exports.unSuspendUser = catchAsync(async (req, res, next) => {
+  const id = req.params.userId;
+  await User.findByIdAndUpdate(id, { isSuspended: false });
+  res.status(200).json({
+    success: true,
+    data: {
+      message: 'user unsuspended!'
+    }
+  });
+});
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find();
   // SEND RESPONSE
@@ -61,7 +81,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
       )
     );
   }
-  
+
   // 2) Filtered out unwanted fields names that are not allowed to be updated
   const filteredBody = filterObj(req.body, 'name', 'email');
 
