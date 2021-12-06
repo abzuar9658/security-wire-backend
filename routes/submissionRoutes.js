@@ -58,7 +58,7 @@ router.patch(
   submissionController.approveSubmission
 );
 
-router.get(
+router.post(
   '/payment/:submissionId',
   authController.protect,
   authController.restrictTo('customer'),
