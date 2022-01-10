@@ -8,13 +8,14 @@ let { PythonShell } = require('python-shell');
 exports.createScan = catchAsync(async (req, res, next) => {
   var dataToSend;
   // spawn new child process to call the python script
+  const newScan = new Scan({customer: req.user._id, url:req.body.url})
+  await newScan.save()
   try {
     const python1 = await spawn('python', [
-      '../security-wire-backend/utils/scanner_module/scanner.py',
+      './utils/scanner_module/scanner.py',
       req.body.url
     ]);
     // collect data from script
-
     python1.stdout.on('data', function(data) {
       dataToSend = data.toString();
       dataToSend = JSON.parse(dataToSend);
@@ -23,25 +24,24 @@ exports.createScan = catchAsync(async (req, res, next) => {
 
     python1.stderr.on('data', async err_data => {
       console.error(`child stderr:\n${data}`);
-      const newScan = await Scan.create({
-        status: 'error',
-        error: err_data,
-        customer: req.user._id
-      });
+        newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
+        newScan.status= 'error',
+        newScan.error= err_data
+        await newScan.save()
     });
 
     // in close event we are sure that stream from child process is closed
     python1.on('close', async code => {
       console.log(`child1 process close all stdio with code ${code}`);
       // send data to browser
-      const newScan = await Scan.create({
-        status: 'completed',
-        data: dataToSend,
-        customer: req.user._id
-      });
+      newScan.status= 'completed',
+      newScan.data= dataToSend
+      await newScan.save()
       res.status(200).send;
     });
-  } catch (e) {}
+  } catch (e) {
+    console.log(e)
+  }
 });
 
 exports.getmyScans = catchAsync(async (req, res, next) => {

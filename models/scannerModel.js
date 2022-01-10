@@ -7,6 +7,7 @@ const scannerSchema = new mongoose.Schema({
     required: [true, 'Please provide customer ID']
   },
   date: { type: Date, default: Date.now },
+  url:{type: String, default:"error"},
   data: {
     type: String,
     get: function(data) {

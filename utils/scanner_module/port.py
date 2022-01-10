@@ -33,14 +33,14 @@ def main(p_url):
     url = str(p_url)
     try:
         ip = socket.gethostbyname(url)
-        tno = 500
+        tno = 50
         for x in range(tno):
-            if((x+1)*(1000/tno) <= 1000):
+            if((x+1)*(450/tno) <= 450):
                 th = Thread(target=portScanner, args=(
-                    x*(1000/tno), (x+1)*(1000/tno), ip))
+                    x*(450/tno), (x+1)*(450/tno), ip))
             else:
                 th = Thread(target=portScanner, args=(
-                    x*(1000/tno), 1000, ip))
+                    x*(450/tno), 450, ip))
             th.start()
             threads.append(th)
         for x in threads:

@@ -71,6 +71,19 @@ exports.getSecurityResearchers = catchAsync(async (req, res, next) => {
   });
 });
 
+
+exports.status = catchAsync(async (req, res, next) => {
+  const users = await User.findOne({ _id: req.user._id })
+  var xstatus = false
+  if(users.status == true){
+    xstatus = true
+  }
+  return res.status(200).json({
+    status: xstatus,
+  });
+});
+
+
 exports.updateMe = catchAsync(async (req, res, next) => {
   // 1) Create error if user POSTs password data
   if (req.body.password || req.body.passwordConfirm) {

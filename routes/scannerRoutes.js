@@ -1,6 +1,7 @@
 const express = require('express');
 const authController = require('./../controllers/authController');
 const scannerController = require('./../controllers/scannerController');
+const userController = require('./../controllers/userController');
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.post(
   scannerController.createScan
 );
 router.get('/', authController.protect, scannerController.getmyScans);
+router.get('/status', authController.protect, userController.status);
 router.get(
   '/getAll',
   authController.protect,
