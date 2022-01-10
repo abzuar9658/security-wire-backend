@@ -45,7 +45,7 @@ exports.createScan = catchAsync(async (req, res, next) => {
 });
 
 exports.getmyScans = catchAsync(async (req, res, next) => {
-  const Scans = await Scan.find({ customer: req.user._id.toString() });
+  const Scans = await Scan.find({ customer: req.user._id.toString(),deleted: false });
   // SEND RESPONSE
   res.status(200).json({
     status: 'success',
