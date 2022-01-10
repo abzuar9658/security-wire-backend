@@ -306,7 +306,7 @@ exports.getEnrolled = catchAsync(async (req, res, next) => {
       programId => !(programId.toString() === program._id.toString())
     );
   }
-  await program.save();
+  await program.save({validateBeforeSave:false});
   await req.user.save({ validateBeforeSave: false });
   return res.status(201).json({
     stauts: 'success',
@@ -356,7 +356,7 @@ exports.getUnenrolled = catchAsync(async (req, res, next) => {
   program.enrolled = program.enrolled.filter(
     user => user.toString() !== userId.toString()
   );
-  program = await program.save();
+  program = await program.save({validateBeforeSave:false});
   user.programsEnrolled = user.programsEnrolled.filter(
     program => program.toString() !== programId.toString()
   );
