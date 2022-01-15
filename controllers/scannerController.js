@@ -7,6 +7,7 @@ let { PythonShell } = require('python-shell');
 
 exports.createScan = catchAsync(async (req, res, next) => {
   var dataToSend;
+  const updatedUser = await User.findByIdAndUpdate(req.user._id,{scanning: true})
   // spawn new child process to call the python script
   const newScan = new Scan({customer: req.user._id, url:req.body.url})
   await newScan.save()
@@ -16,17 +17,27 @@ exports.createScan = catchAsync(async (req, res, next) => {
       req.body.url
     ]);
     // collect data from script
-    python1.stdout.on('data', function(data) {
+    python1.stdout.on('data',async data => {
       dataToSend = data.toString();
       dataToSend = JSON.parse(dataToSend);
       console.log('Pipe data from python script ...', dataToSend);
     });
 
-    python1.stderr.on('data', async err_data => {
+    python1.on('uncaughtException', async err_data => {
+      console.error(`child uncaught stderr:\n${data}`);
+        newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
+        newScan.status= 'error',
+        newScan.error= err_data
+        await User.findByIdAndUpdate(req.user._id,{scanning: true})
+        await newScan.save()
+    });
+
+    python1.on('error', async err_data => {
       console.error(`child stderr:\n${data}`);
         newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
         newScan.status= 'error',
         newScan.error= err_data
+        await User.findByIdAndUpdate(req.user._id,{scanning: true})
         await newScan.save()
     });
 
@@ -37,6 +48,7 @@ exports.createScan = catchAsync(async (req, res, next) => {
       newScan.status= 'completed',
       newScan.data= dataToSend
       await newScan.save()
+      await User.findByIdAndUpdate(req.user._id,{scanning: true})
       res.status(200).send;
     });
   } catch (e) {
@@ -55,6 +67,7 @@ exports.getmyScans = catchAsync(async (req, res, next) => {
     }
   });
 });
+
 
 exports.getAllScans = catchAsync(async (req, res, next) => {
   const Scans = await Scan.find().sort('date');
