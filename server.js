@@ -28,10 +28,50 @@ mongoose
   })
   .then(() => console.log('DB connection successful!'));
 
-const port = process.env.PORT || 3000;
-const server = app.listen(port, () => {
-  console.log(`App running on port ${port}...`);
+const options = {
+  cors: true
+};
+
+const http = require('http').Server(app);
+const io = require('socket.io')(http, options);
+
+io.on('connection', socket => {
+  // console.log('Connected: ' + socket);
+
+  socket.on('disconnect', () => {
+    // console.log('Disconnected: ' + socket.userId);
+  });
+
+  socket.on('joinRoom', ({ chatroomId }) => {
+    socket.join(chatroomId);
+    // console.log('A user joined chatroom: ' + chatroomId);
+  });
+
+  socket.on('leaveRoom', ({ chatroomId }) => {
+    socket.leave(chatroomId);
+    // console.log('A user left chatroom: ' + chatroomId);
+  });
+
+  socket.on(
+    'chatroomMessage',
+    async ({ chatroomId, user1, user2, message }) => {
+      if (message.trim().length > 0) {
+        const chat = await Chat.create({
+          user1,
+          user2,
+          message
+        });
+        io.to(chatroomId).emit('newMessage', {
+          chat
+        });
+      }
+    }
+  );
 });
+
+const server = http.listen(process.env.PORT || 5000, () =>
+  console.log(`Listening on port: ${process.env.PORT || 5000}`)
+);
 
 process.on('unhandledRejection', err => {
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
@@ -41,4 +81,7 @@ process.on('unhandledRejection', err => {
   });
 });
 
-
+// const port = process.env.PORT || 3000;
+// const server = app.listen(port, () => {
+//   console.log(`App running on port ${port}...`);
+// });
