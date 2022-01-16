@@ -10,6 +10,26 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
+exports.suspendUser = catchAsync(async (req, res, next) => {
+  const id = req.params.userId;
+  await User.findByIdAndUpdate(id, { isSuspended: true });
+  res.status(200).json({
+    success: true,
+    data: {
+      message: 'user suspended!'
+    }
+  });
+});
+exports.unSuspendUser = catchAsync(async (req, res, next) => {
+  const id = req.params.userId;
+  await User.findByIdAndUpdate(id, { isSuspended: false });
+  res.status(200).json({
+    success: true,
+    data: {
+      message: 'user unsuspended!'
+    }
+  });
+});
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find();
   // SEND RESPONSE
@@ -50,6 +70,19 @@ exports.getSecurityResearchers = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+
+exports.status = catchAsync(async (req, res, next) => {
+  const users = await User.findOne({ _id: req.user._id })
+  var xstatus = false
+  if(users.scanning == true){
+    xstatus = true
+  }
+  return res.status(200).json({
+    status: xstatus,
+  });
+});
+
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   // 1) Create error if user POSTs password data

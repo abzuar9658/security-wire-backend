@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 
 const programSchema = new mongoose.Schema({
   title: {
@@ -22,7 +23,12 @@ const programSchema = new mongoose.Schema({
     max: 3000
   },
   inScope: {
-    type: [String]
+    type: [String],
+    required: [true, 'Please enter atleast one inscope link for this program'],
+    validate: [
+      v => Array.isArray(v) && v.length > 0,
+      'Please enter atleast one inscope link for this program'
+    ]
   },
   outScope: {
     type: [String]
@@ -34,7 +40,15 @@ const programSchema = new mongoose.Schema({
   //     vrt3: { type: Number, max: 5 },
   //     vrt4: { type: Number, max: 5 }
   // },
-  vrt: [String],
+
+  vrt: {
+    type: [String],
+    required: [true, 'Please enter atleast one vrt for this program'],
+    validate: [
+      v => Array.isArray(v) && v.length > 0,
+      'Please enter atleast one vrt for this program'
+    ]
+  },
   isApproved: {
     type: Boolean,
     default: false

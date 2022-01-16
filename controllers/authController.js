@@ -75,7 +75,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   if (req.body.role == 'admin') {
     await this.restrictToAdmin(req, res, next);
   }
-  // console.log('Registering... s', req.body.role);
+  console.log('Registering... s', req.body.role);
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
@@ -119,7 +119,14 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Incorrect email or password', 401));
   }
-
+  if (user && user.isSuspended) {
+    return next(
+      new AppError(
+        'You are suspended, please contact secwire administration',
+        401
+      )
+    );
+  }
   createSendToken(user, 200, res);
 });
 
@@ -132,7 +139,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   ) {
     token = req.headers.authorization.split(' ')[1];
   }
-
+  
   if (!token) {
     return next(
       new AppError('You are not logged in! Please log in to get access.', 401)
@@ -152,7 +159,14 @@ exports.protect = catchAsync(async (req, res, next) => {
       )
     );
   }
-
+  if (currentUser && currentUser.isSuspended) {
+    return next(
+      new AppError(
+        'You are suspended, please contact secwire administration',
+        401
+      )
+    );
+  }
   // 4) Check if user changed password after the token was issued
   if (currentUser.changedPasswordAfter(decoded.iat)) {
     return next(
@@ -205,13 +219,12 @@ exports.verify = catchAsync(async (req, res, next) => {
 });
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    // roles ['admin', 'customer','security-researcher']. role='admin'
+    //roles['admin', 'customer', 'security-researcher'].role = 'admin';
     if (!roles.includes(req.user.role)) {
       return next(
         new AppError('You do not have permission to perform this action', 403)
       );
     }
-
     next();
   };
 };
@@ -278,7 +291,14 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   await user.save();
-
+  if (user && user.isSuspended) {
+    return next(
+      new AppError(
+        'You are suspended, please contact secwire administration',
+        401
+      )
+    );
+  }
   // 3) Update changedPasswordAt property for the user
   // 4) Log the user in, send JWT
   createSendToken(user, 200, res);
@@ -287,6 +307,18 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 exports.updatePassword = catchAsync(async (req, res, next) => {
   // 1) Get user from collection
   const user = await User.findById(req.user.id).select('+password');
+  // 2) Check if POSTed current password is correct
+  if (user && user.isSuspended) {
+    return next(
+      new AppError(
+        'You are suspended, please contact secwire administration',
+        401
+      )
+    );
+  }
+  if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+    return next(new AppError('Your current password is wrong.', 401));
+  }
 
   // 2) Check if POSTed current password is correct
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
@@ -298,7 +330,6 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   user.passwordConfirm = req.body.passwordConfirm;
   await user.save();
   // User.findByIdAndUpdate will NOT work as intended!
-
   // 4) Log user in, send JWT
   createSendToken(user, 200, res);
 });

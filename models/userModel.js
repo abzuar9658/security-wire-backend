@@ -47,7 +47,10 @@ const userSchema = new mongoose.Schema(
       default: true,
       select: false
     },
-
+    isSuspended: {
+      type: Boolean,
+      default: false
+    },
     // Only for customer
     createdPrograms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Program' }],
     scanning: {

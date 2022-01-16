@@ -5,7 +5,7 @@ const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const multer = require('multer');
 const path = require('path');
-
+const uuid = require('uuidv4');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -82,11 +82,11 @@ exports.getSubmissionsToApprove = catchAsync(async (req, res, next) => {
 exports.getSubmissionsByResearcher = catchAsync(async (req, res, next) => {
   const submissions = await Submissions.find({
     researcherId: req.user.id
-  });
+  }).populate('programId', 'title');
   return res.status(200).json({
     status: 'success',
     data: {
-      submissions
+      programs: submissions
     }
   });
 });
@@ -193,28 +193,68 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
       )
     );
   // 2) Create checkout session
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    success_url: `${req.protocol}://${req.get('host')}`,
-    cancel_url: `${req.protocol}://${req.get('host')}`,
-    customer_email: req.user.email,
-    client_reference_id: submission.researcherId.toString(),
-    line_items: [
-      {
-        name: `${submission._id.toString()} Submission`,
-        description: `Submission for ${
-          req.user.id
-        } to submission ${submission._id.toString()} `,
-        amount: req.body.price,
-        currency: 'usd',
-        quantity: 1
-      }
-    ]
-  });
+  // const session = await stripe.checkout.sessions.create({
+  //   payment_method_types: ['card'],
+  //   success_url: `${req.protocol}://${req.get('host')}`,
+  //   cancel_url: `${req.protocol}://${req.get('host')}`,
+  //   customer_email: req.user.email,
+  //   client_reference_id: submission.researcherId.toString(),
+  //   line_items: [
+  //     {
+  //       name: `${submission._id.toString()} Submission`,
+  //       description: `Submission for ${
+  //         req.user.id
+  //       } to submission ${submission._id.toString()} `,
+  //       amount: req.body.price,
+  //       currency: 'usd',
+  //       quantity: 1
+  //     }
+  //   ]
+  // });
 
-  // 3) Create session as response
-  res.status(200).json({
-    status: 'success',
-    session
-  });
+  // // 3) Create session as response
+  // res.status(200).json({
+  //   status: 'success',
+  //   session
+  // });
+  console.log('Request:', req.body);
+
+  let error;
+  let status;
+  try {
+    const { program, token } = req.body;
+
+    const customer = await stripe.customers.create({
+      email: token.email,
+      source: token.id
+    });
+
+    const idempotency_key = uuid();
+    const charge = await stripe.charges.create(
+      {
+        amount: program.vrt * 100,
+        currency: 'usd',
+        customer: customer.id,
+        receipt_email: token.email,
+        description: `Bug bounty for ${program.title}`,
+        shipping: {
+          name: token.card.name,
+          address: {
+            country: token.card.address_country,
+            postal_code: token.card.address_zip
+          }
+        }
+      },
+      {
+        idempotency_key
+      }
+    );
+    console.log('Charge:', { charge });
+    status = 'success';
+  } catch (error) {
+    console.error('Error:', error);
+    status = 'failure';
+  }
+
+  res.status(200).json({ error, status });
 });

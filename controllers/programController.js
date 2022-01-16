@@ -65,12 +65,22 @@ exports.getPublicPrograms = catchAsync(async (req, res, next) => {
 
 exports.getmyPrograms = catchAsync(async (req, res, next) => {
   const programs = await Program.find({ customer: req.user._id.toString() });
+  // const submissions = await Submission.find({programId: })
+  let myPrograms = [];
+  await forEach(programs, async program => {
+    let submissions = await Submission.find({
+      programId: program._id,
+      isApproved: true
+    }).populate('researcherId', 'name');
+    myPrograms = [...myPrograms, { ...program._doc, submissions }];
+  });
   // SEND RESPONSE
+  console.log(myPrograms);
   res.status(200).json({
     status: 'success',
     results: programs.length,
     data: {
-      program: programs
+      program: myPrograms
     }
   });
 });

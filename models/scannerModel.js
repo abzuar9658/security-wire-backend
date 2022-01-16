@@ -7,12 +7,13 @@ const scannerSchema = new mongoose.Schema({
     required: [true, 'Please provide customer ID']
   },
   date: { type: Date, default: Date.now },
+  url:{type: String, default:"error"},
   data: {
     type: String,
     get: function(data) {
-      try { 
+      try {
         return JSON.parse(data);
-      } catch(error) { 
+      } catch (error) {
         return data;
       }
     },
@@ -33,7 +34,6 @@ const scannerSchema = new mongoose.Schema({
     enum: ['active', 'completed', 'error'],
     default: 'active'
   }
-
 });
 
 scannerSchema.pre(/^find/, function(next) {
