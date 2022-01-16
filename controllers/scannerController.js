@@ -5,8 +5,14 @@ const AppError = require('./../utils/appError');
 const { spawn } = require('child_process');
 let { PythonShell } = require('python-shell');
 
+ 
 exports.createScan = catchAsync(async (req, res, next) => {
   var dataToSend;
+  const updatedUser = await User.findByIdAndUpdate(req.user._id,{scanning: true})
+
+  var io = req.app.get('socketio');
+  io.emit("FromAPI","socketUsed" );
+
   // spawn new child process to call the python script
   const newScan = new Scan({customer: req.user._id, url:req.body.url})
   await newScan.save()
@@ -16,18 +22,34 @@ exports.createScan = catchAsync(async (req, res, next) => {
       req.body.url
     ]);
     // collect data from script
-    python1.stdout.on('data', function(data) {
+    python1.stdout.on('data',async data => {
       dataToSend = data.toString();
       dataToSend = JSON.parse(dataToSend);
       console.log('Pipe data from python script ...', dataToSend);
     });
 
-    python1.stderr.on('data', async err_data => {
+    python1.on('uncaughtException', async err_data => {
+      console.error(`child uncaught stderr:\n${data}`);
+        newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
+        newScan.status= 'error',
+        newScan.error= err_data
+        await User.findByIdAndUpdate(req.user._id,{scanning: false})
+        await newScan.save()
+        res.status(200).send;
+        io.emit("FromAPI","socketUsed" );
+    });
+
+
+
+    python1.on('error', async err_data => {
       console.error(`child stderr:\n${data}`);
         newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
         newScan.status= 'error',
         newScan.error= err_data
+        await User.findByIdAndUpdate(req.user._id,{scanning: false})
         await newScan.save()
+        res.status(200).send;
+        io.emit("FromAPI","socketUsed" );
     });
 
     // in close event we are sure that stream from child process is closed
@@ -37,7 +59,8 @@ exports.createScan = catchAsync(async (req, res, next) => {
       newScan.status= 'completed',
       newScan.data= dataToSend
       await newScan.save()
-      res.status(200).send;
+      await User.findByIdAndUpdate(req.user._id,{scanning: false})
+      io.emit("FromAPI","socketUsed" );
     });
   } catch (e) {
     console.log(e)
@@ -45,7 +68,7 @@ exports.createScan = catchAsync(async (req, res, next) => {
 });
 
 exports.getmyScans = catchAsync(async (req, res, next) => {
-  const Scans = await Scan.find({ customer: req.user._id.toString() });
+  const Scans = await Scan.find({ customer: req.user._id.toString(),deleted: false });
   // SEND RESPONSE
   res.status(200).json({
     status: 'success',
@@ -55,6 +78,7 @@ exports.getmyScans = catchAsync(async (req, res, next) => {
     }
   });
 });
+
 
 exports.getAllScans = catchAsync(async (req, res, next) => {
   const Scans = await Scan.find().sort('date');

@@ -75,7 +75,7 @@ exports.getSecurityResearchers = catchAsync(async (req, res, next) => {
 exports.status = catchAsync(async (req, res, next) => {
   const users = await User.findOne({ _id: req.user._id })
   var xstatus = false
-  if(users.status == true){
+  if(users.scanning == true){
     xstatus = true
   }
   return res.status(200).json({

@@ -306,7 +306,7 @@ exports.getEnrolled = catchAsync(async (req, res, next) => {
       programId => !(programId.toString() === program._id.toString())
     );
   }
-  await program.save({validateBeforeSave:false});
+  await program.save({ validateBeforeSave: false });
   await req.user.save({ validateBeforeSave: false });
   return res.status(201).json({
     stauts: 'success',
