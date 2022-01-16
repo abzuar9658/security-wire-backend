@@ -3,8 +3,6 @@ const dotenv = require('dotenv');
 const express = require("express");
 
 
-
-
 process.on('uncaughtException', err => {
   console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
   console.log(err);
