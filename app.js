@@ -12,6 +12,8 @@ const userRouter = require('./routes/userRoutes');
 const scannerRouter = require('./routes/scannerRoutes');
 const programRouter = require('./routes/programRoute');
 const submissionRouter = require('./routes/submissionRoutes');
+const messageRouter = require('./routes/messageRoutes');
+const chatRouter = require('./routes/chatRoutes');
 const app = express();
 
 // 1) GLOBAL MIDDLEWARES
@@ -24,13 +26,13 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// // Limit requests from same API
-// const limiter = rateLimit({
-//   max: 100,
-//   windowMs: 60 * 60 * 1000,
-//   message: 'Too many requests from this IP, please try again in an hour!'
-// });
-// app.use('/api', limiter);
+// Limit requests from same API
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many requests from this IP, please try again in an hour!'
+});
+app.use('/api', limiter);
 
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
@@ -63,6 +65,8 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/programs', programRouter);
 app.use('/api/v1/submissions', submissionRouter);
 app.use('/api/v1/Scanner', scannerRouter);
+app.use('/api/v1/messages', messageRouter);
+app.use('/api/v1/chats', chatRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

@@ -82,7 +82,7 @@ exports.getSubmissionsToApprove = catchAsync(async (req, res, next) => {
 exports.getSubmissionsByResearcher = catchAsync(async (req, res, next) => {
   const submissions = await Submissions.find({
     researcherId: req.user.id
-  }).populate('programId', 'title');
+  }).populate('programId', ['title', 'customer']);
   return res.status(200).json({
     status: 'success',
     data: {
@@ -140,9 +140,9 @@ exports.updateSubmission = catchAsync(async (req, res, next) => {
     );
   }
   if (req.body.endPointUrl) submission.endPointUrl = req.body.endPointUrl;
-  if (req.file) submission.poc = req.file.name;
+  if (req.file) submission.poc = req.file.fileName;
   submission = await submission.save();
-
+  console.log('I am found', submission, req.file);
   res.status(201).json({
     status: 'success',
     data: submission
