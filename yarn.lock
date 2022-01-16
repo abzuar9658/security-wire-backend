@@ -2762,10 +2762,10 @@
     "component-emitter" "~1.3.0"
     "debug" "~4.3.1"
 
-"socket.io@^4.4.0":
-  "integrity" "sha512-bnpJxswR9ov0Bw6ilhCvO38/1WPtE3eA2dtxi2Iq4/sFebiDJQzgKNYA7AuVVdGW09nrESXd90NbZqtDd9dzRQ=="
-  "resolved" "https://registry.npmjs.org/socket.io/-/socket.io-4.4.0.tgz"
-  "version" "4.4.0"
+"socket.io@^4.4.1":
+  "integrity" "sha512-s04vrBswdQBUmuWJuuNTmXUVJhP0cVky8bBDhdkf8y0Ptsu7fKU2LuLbts9g+pdmAdyMMn8F/9Mf1/wbtUN0fg=="
+  "resolved" "https://registry.npmjs.org/socket.io/-/socket.io-4.4.1.tgz"
+  "version" "4.4.1"
   dependencies:
     "accepts" "~1.3.4"
     "base64id" "~2.0.0"

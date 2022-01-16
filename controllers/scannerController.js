@@ -5,9 +5,14 @@ const AppError = require('./../utils/appError');
 const { spawn } = require('child_process');
 let { PythonShell } = require('python-shell');
 
+ 
 exports.createScan = catchAsync(async (req, res, next) => {
   var dataToSend;
   const updatedUser = await User.findByIdAndUpdate(req.user._id,{scanning: true})
+
+  var io = req.app.get('socketio');
+  io.emit("FromAPI","socketUsed" );
+
   // spawn new child process to call the python script
   const newScan = new Scan({customer: req.user._id, url:req.body.url})
   await newScan.save()
@@ -28,17 +33,23 @@ exports.createScan = catchAsync(async (req, res, next) => {
         newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
         newScan.status= 'error',
         newScan.error= err_data
-        await User.findByIdAndUpdate(req.user._id,{scanning: true})
+        await User.findByIdAndUpdate(req.user._id,{scanning: false})
         await newScan.save()
+        res.status(200).send;
+        io.emit("FromAPI","socketUsed" );
     });
+
+
 
     python1.on('error', async err_data => {
       console.error(`child stderr:\n${data}`);
         newScan.data = `{"url":${req.body.url},"sqli":[],"xss":[],"port":[],"exif":null}`
         newScan.status= 'error',
         newScan.error= err_data
-        await User.findByIdAndUpdate(req.user._id,{scanning: true})
+        await User.findByIdAndUpdate(req.user._id,{scanning: false})
         await newScan.save()
+        res.status(200).send;
+        io.emit("FromAPI","socketUsed" );
     });
 
     // in close event we are sure that stream from child process is closed
@@ -48,8 +59,8 @@ exports.createScan = catchAsync(async (req, res, next) => {
       newScan.status= 'completed',
       newScan.data= dataToSend
       await newScan.save()
-      await User.findByIdAndUpdate(req.user._id,{scanning: true})
-      res.status(200).send;
+      await User.findByIdAndUpdate(req.user._id,{scanning: false})
+      io.emit("FromAPI","socketUsed" );
     });
   } catch (e) {
     console.log(e)

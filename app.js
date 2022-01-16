@@ -14,6 +14,26 @@ const programRouter = require('./routes/programRoute');
 const submissionRouter = require('./routes/submissionRoutes');
 const app = express();
 
+const socketIo = require("socket.io");
+const http = require("http");
+
+const httpServer = http.createServer();
+const io = new socketIo.Server(httpServer, {
+  // options
+});
+
+io.on("connection", (socket) => {
+  const data= "socketUsed"
+  console.log("incoming connection")
+  app.set('socketio', io);
+  // Emitting a new message. Will be consumed by the client
+  // socket.emit("FromAPI",data );
+});
+const port1 = process.env.PORT1 || 4000;
+
+httpServer.listen(port1, () =>{ console.log(`websocket on ${port1}`)});
+
+
 // 1) GLOBAL MIDDLEWARES
 // Set security HTTP headers
 app.use(cors());

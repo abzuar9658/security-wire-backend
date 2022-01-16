@@ -49,5 +49,5 @@ if __name__ == "__main__":
             DATA["exif"] = []
         print(json.dumps(DATA))
     except:
-        print(json.dumps({"url": "", "sqli": [],
+        print(json.dumps({"url": sys.argv[1], "sqli": [],
               "xss": [], "port": [], "exif": "null"}))
